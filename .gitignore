@@ -1,0 +1,7 @@
+.venv
+.idea
+Food_Inspections.csv
+auxil
+out
+.ipynb_checkpoints
+.idea/*

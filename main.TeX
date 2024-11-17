@@ -1,0 +1,227 @@
+\documentclass[12pt]{article}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\geometry{a4paper, margin=1in}
+
+\title{Proposal Document: Chicago Food Inspection Data Analysis}
+\author{Glen Miasnychenko}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction and Overview of the Project Scope}
+
+\hspace*{2em}The primary objective of this project is to analyze the Chicago food inspection dataset to derive actionable insights.
+The analysis will explore inspection trends, identify compliance patterns, and detect potential biases across different
+dimensions, including geographic regions, time periods, and facility types.
+
+\section*{Data Loading and Pre-Processing Strategies}
+
+\subsection*{Data Loading}
+The dataset (\texttt{Food\_Inspections.csv}) will be loaded using the \texttt{pandas.read\_csv()} method.
+Key columns and their expected datatypes include:
+\begin{itemize}
+    \item \textbf{DBA Name (string):} Name of the food establishment.
+    \item \textbf{Address (string):} Location details.
+    \item \textbf{Zip (float64):} Zip code of the establishment (to be converted to \texttt{int32}).
+    \item \textbf{Inspection Date (datetime64[ns]):} Timestamp of inspections.
+    \item \textbf{Results (category):} Inspection outcomes.
+    \item \textbf{Violations (string):} Description of violations.
+    \item \textbf{Latitude and Longitude (float64):} Geographic coordinates for spatial analysis.
+    \item \textbf{License \# (int64):} Unique identifier for establishments.
+\end{itemize}
+
+\subsection*{Pre-Processing}
+After loading the document, we expect some level of pre-processing to be required:
+\begin{itemize}
+    \item Convert \texttt{Inspection Date} to \texttt{datetime} format for improved time-series analysis.
+    \item Standardize \texttt{Zip} as \texttt{int32} for geospatial alignment.
+    \item Handle missing data:
+    \begin{itemize}
+        \item Drop rows with critical missing fields (\texttt{License \#}, \texttt{Zip}, \texttt{Inspection Date}).
+        \item Impute empty \texttt{Violations} with ``No violations reported.''
+    \end{itemize}
+    \item Clean textual columns (\texttt{DBA Name}, \texttt{Violations}) by trimming whitespace and converting to lowercase.
+\end{itemize}
+
+\section*{Topics to Cover}
+\subsection*{High and Low Pass Rate Zip Codes}
+\textbf{Objective:} Identify zipcodes with the highest and lowest pass rates to understand regional compliance trends.
+
+\textbf{Approach:}
+\begin{itemize}
+    \item Copy the related dataframe section (columns \textit{Zip} and \textit{Results}).
+    \item Create a \textit{pass categories} and \textit{fail categories} that would consist of related values.
+    \item Create a derived column, \texttt{Pass\_Fail} (\texttt{int8}):
+    \begin{itemize}
+        \item 1 for \texttt{Pass} or \texttt{Pass w/ Conditions}.
+        \item 0 for \texttt{Fail} or \texttt{Out of Business}.
+    \end{itemize}
+    \item Drop the na values.
+    \item Group data by \texttt{Zip} and calculate the mean of \texttt{Pass\_Fail} to derive pass rates, and convert to percentage.
+    \item Sort the new dataframe by the pass rate in descending order.
+    \item Display both the table with the top 5 zipcodes by the pass rates, and 5 zipcodes with the lowest rates.
+    \item The next step would be to display a graph with the pass rates as \textbf{y-axis} and the zipcodes as the \textbf{x-axis}.
+    \item As a lot of people have no knowledge of the Chicago zipcodes.
+    It would be great to show the heatmap with the actual map of the zipcodes (that would require a geojson file).
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Table with the highest top 5 and lowest top 5 values.
+    \item Bar chart showing pass rates by zipcode.
+    \item Heat map of pass rates using \texttt{geopandas} and a GeoJSON file for Chicago zipcode boundaries.
+\end{itemize}
+
+\subsection*{Pass Rate Changes Over Time}
+\textbf{Objective:} Analyze trends in pass rates to understand temporal improvements or challenges.
+
+\textbf{Approach:}
+\begin{itemize}
+    \item Convert the \texttt{Inspection Date} column into the datetime format, if not done before.
+    \item Extract \texttt{Year-Month} (\texttt{period[M]}) from \texttt{Inspection Date}.
+    \item Group inspections by \texttt{Year-Month} and calculate average \texttt{Pass\_Fail} rates.
+    \item Plot it using \texttt{matplotlib}.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Line plot using \texttt{matplotlib} to display pass rate changes over time.
+\end{itemize}
+
+\subsection*{Trend in Number of Inspections}
+\textbf{Objective:} Explore inspection frequency trends across time and zipcodes.
+
+\textbf{Approach:}
+\begin{itemize}
+    \item Count inspections by \texttt{Year-Month} and by \texttt{Zip}.
+    \item Highlight trends for the 10 zipcodes with the highest inspection counts.
+    \item Print both graphs.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item A line chart showing inspection trends over time.
+    \item Multi-line chart showing the inspection trends for 10 zipcodes.
+\end{itemize}
+
+\subsection*{Common Reasons for Violations}
+\textbf{Objective:} Identify the most frequent violations to target recurring compliance issues.
+
+\textbf{Approach:}
+\begin{itemize}
+    \item Get the rows with non-empty \texttt{Violations} column.
+    \item Tokenize the \texttt{Violations} column into individual reasons, splitting by \texttt{|}.
+    \item Count occurrences using \texttt{collections.Counter}.
+    \item Get the ten the most common violations using the \texttt{most\underline{\space}common} method.
+    \item Extract violation codes (numbers before the first \texttt{.}) for easier reference.
+    \item Print the table with the full description of the violations.
+    \item Display the chart with the top 10 most common codes of violations.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Horizontal bar chart showing the top 10 most common codes of violations.
+    \item Table linking violation codes to full descriptions.
+\end{itemize}
+
+\subsection*{Repeated Violations at Locations}
+\textbf{Objective:} Highlight establishments with repeated violations across multiple inspections.
+
+\textbf{Approach:}
+\begin{itemize}
+    \item Group data by \texttt{License \#}, excluding the establishments with invalid Licenses.
+    \item Filter establishments with repeated violations (more than one).
+    \item Add the regular information about a business to a completed dataframe.
+    \item Display the table with top 10 establishments with repeated violations.
+    \item Graph the number of violations against the name of the business.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Bar chart of the top 10 establishments with the most repeated violations.
+    \item Table with more detailed information about said businesses.
+\end{itemize}
+
+\subsection*{Inspections for a Given Restaurant Name}
+\textbf{Objective:} Provide a detailed inspection history for a specified restaurant.
+
+\textbf{Approach:}
+For the ease of use, we will try to create a function, which will take the \texttt{restaurant\underline{\space}name} as an argument,
+and output the history of violations, and a graph.
+The function is supposed to work in this fashion:
+\begin{itemize}
+    \item Filter data for the \texttt{DBA Name} using case-insensitive string matching.
+    \begin{description}
+        \item[Note:] If there are no matches found, we will return nothing, and output a string \textit{"No inspections found"}
+    \end{description}
+    \item Group the data by month in \texttt{Inspection Date} because the info by days will become too big.
+    \item Print the table with the relevant columns, such as \texttt{Results}, \texttt{Violations}, and \texttt{Risk}.
+    \item Graph the \texttt{Results} column against the month in a bar chart, displaying \textit{Pass} as a green bar, and \textit{Fail} as red.
+    Any other results may be yellow.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Table with the main results.
+    \item Stacked bar chart showing inspection outcomes over time.
+\end{itemize}
+
+\subsection*{Nearby Restaurants for a Given Address}
+\textbf{Objective:} Identify restaurants near a specific address and compare their inspection outcomes.
+
+\textbf{Approach:}
+Just as in the previous section, I believe it would be the most fitting to do the section as a function that takes address and radius as the arguments.
+The main qualities of said function should be:
+\begin{itemize}
+    \item Ensure the \texttt{Latitude} and \texttt{Longitude} are present, and display an info message in case they are not.
+    \item Use \texttt{geopy} to geocode the given address into \texttt{Latitude} and \texttt{Longitude}.
+    \item Calculate distances to all establishments using \texttt{geopy.distance.geodesic}.
+    \item Filter establishments within a specified radius (e.g., 1 km).
+    \begin{description}
+        \item[Note:] It is important to make sure we have error messages in case there are no establishments in a given radius.
+    \end{description}
+    \item Once the search is completed, we need to display a list of the closest establishments from closest to the farthest.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Table showing nearby restaurants and their inspection results.
+\end{itemize}
+
+\subsection*{Potential Bias in Inspection Frequency}
+\textbf{Objective:} Check if there are any zipcodes receiving significantly more attention from the inspection agency.
+
+\textbf{Approach:}
+I believe the best metric we can use for this section is going to be the normalized number of inspections per zipcode.
+The process would look like this:
+\begin{itemize}
+    \item Calculate inspection counts (\texttt{int64}) per zipcode.
+    \begin{description}
+        \item[Note:] While the main focus of this section is \textit{normalized numbers of inspections per zipcode}, I believe the sheer number of inspections by Zip Codes is also interesting.
+        Therefore, I believe it is useful to display that in a way of a barchart.
+    \end{description}
+    \item Calculate the number of business establishments per zipcode.
+    \item Normalize counts of inspections (using unique \texttt{License \#} counts).
+    \item Display it in the form of a barchart using \texttt{matplotlib}.
+    \item Again, the pure numbers of zipcodes are not necessarily informative.
+    The more useful visualization is a heatmap that uses \texttt{geojson}.
+    I plan to use \href{https://github.com/smartchicago/chicago-atlas}{this geojson} file.
+\end{itemize}
+
+\textbf{Visualization:}
+\begin{itemize}
+    \item Bar chart of normalized inspection frequencies.
+    \item Heat map using \texttt{geopandas} to display normalized rates geographically.
+\end{itemize}
+
+\section*{Conclusion}
+\hspace*{2em}This proposal provides a robust framework for analyzing Chicago's food inspection data.
+By employing systematic data handling, geospatial analysis, and detailed visualizations, this project will address public health concerns and highlight areas for regulatory improvement.
+
+\end{document}
